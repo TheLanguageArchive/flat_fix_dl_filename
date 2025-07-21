@@ -1,0 +1,6 @@
+services:
+  flat_fix_dl_filename.route_subscriber:
+    class: 'Drupal\flat_fix_dl_filename\Routing\RouteSubscriber'
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: event_subscriber }

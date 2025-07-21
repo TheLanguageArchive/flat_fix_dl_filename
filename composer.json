@@ -1,0 +1,10 @@
+{
+    "name": "thelanguagearchive/flat_fix_dl_filename",
+    "description": "Ensures correct filenames when downloading files from Fedora through Drupal",
+    "type": "drupal-module",
+    "license": "GPL-3.0",
+    "minimum-stability": "dev",
+    "require": {
+        "drupal/core": "^10.0"
+    }
+}

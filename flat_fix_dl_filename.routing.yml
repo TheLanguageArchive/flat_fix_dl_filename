@@ -1,0 +1,10 @@
+flat_fix_dl_filename.flysystem_file_download:
+  path: '/_flysystem/fedora/{path+}'
+  defaults:
+    _controller: 'Drupal\flat_fix_dl_filename\Controller\FileDownloadController::downloadFromFlysystem'
+  requirements:
+    _permission: 'access content'
+  options:
+    parameters:
+      path:
+        type: 'string'

@@ -1,0 +1,5 @@
+name: FLAT fix download filename
+description: Ensures correct filenames when downloading files from Fedora through Drupal
+package: FLAT
+type: module
+core_version_requirement: ^10
