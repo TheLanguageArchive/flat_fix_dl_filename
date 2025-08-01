@@ -3,46 +3,51 @@
 namespace Drupal\flat_fix_dl_filename\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Drupal\file\FileInterface;
 
-class FileDownloadController extends ControllerBase {
+class FileDownloadController extends ControllerBase
+{
 
-  public function downloadFromFlysystem($path, Request $request) {
-
-    //\Drupal::logger('flat_fix_dl_filename')->notice('downloadFromFlysystem triggerd: ' . $path);
-
-    // Map the Flysystem path to the corresponding file in Fedora or wherever the file resides.
+  public function downloadFromFlysystem($path, Request $request)
+  {
     $file = $this->getFileFromFlysystemPath($path);
 
-    if (!$file) {
-      // Return a 404 if no file found.
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+    if (!$file instanceof FileInterface) {
+      throw new NotFoundHttpException();
     }
 
-    // Get the filename from the File Entity.
-    $filename = $file->getFilename();
+    if (!$file->access('download')) {
+      throw new AccessDeniedHttpException();
+    }
 
-    // Sanitize the filename.
-    $sanitized_filename = preg_replace('/[^A-Za-z0-9.\-_]/', '_', $filename);
+    $filename = preg_replace('/[^A-Za-z0-9.\-_]/', '_', $file->getFilename());
 
-    // Return the response to allow downloading.
-    $response = new BinaryFileResponse($file->getFileUri());
-    $disposition = $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $sanitized_filename);
+    $uri = $file->getFileUri();
+    $real_path = \Drupal::service('file_system')->realpath($uri);
+    if (!$real_path || !file_exists($real_path)) {
+      throw new NotFoundHttpException();
+    }
+
+    $response = new BinaryFileResponse($real_path);
+    $disposition = $response->headers->makeDisposition(
+      ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+      $filename
+    );
     $response->headers->set('Content-Disposition', $disposition);
 
     return $response;
   }
 
-  /**
-   * Get file from Flysystem path (map it to the correct file).
-   */
-  protected function getFileFromFlysystemPath($path) {
-    // Map the Flysystem path to a file entity or whatever storage you are using.
-    // Example logic:
-    $file = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties(['uri' => 'fedora://' . $path]);
-
-    return $file ? reset($file) : NULL;
+  protected function getFileFromFlysystemPath($path)
+  {
+    $files = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties([
+      'uri' => 'fedora://' . $path,
+    ]);
+    return $files ? reset($files) : NULL;
   }
 }
